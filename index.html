@@ -256,9 +256,6 @@ function generarCotizacion() {
     alert("Selecciona un cliente válido");
     return;
   }
-
-  // Resto de tu lógica para generar la cotización...
-  // Asegúrate de usar "clienteId" en lugar del valor del combobox antiguo
 }
 
 function generarCotizacion() {
@@ -366,50 +363,6 @@ function generarCotizacion() {
     })
     .nuevaCotizacion(clienteId, items, descuento, formaPago);
 }
-
-// Función para ver una cotización
-function verCotizacion(idCotizacion) {
-  google.script.run
-    .withSuccessHandler(cotizacion => {
-      const detallesHTML = `
-        <strong>ID Cotización:</strong> ${cotizacion.idCotizacion}<br>
-        <strong>Cliente:</strong> ${cotizacion.cliente.nombre}<br>
-        <strong>Empresa:</strong> ${cotizacion.cliente.empresa}<br>
-        <strong>Fecha:</strong> ${cotizacion.fecha}<br>
-        <strong>Forma de Pago:</strong> ${cotizacion.formaPago}<br>
-        <strong>Descuento:</strong> $${cotizacion.descuento.toFixed(2)}<br>
-        <strong>Subtotal:</strong> $${cotizacion.subtotal.toFixed(2)}<br>
-        <strong>IVA (13%):</strong> $${cotizacion.iva.toFixed(2)}<br>
-        <strong>Total:</strong> $${cotizacion.total.toFixed(2)}<br>
-        <strong>Items:</strong><br>
-        <ul>
-          ${cotizacion.items.map(item => `
-            <li>
-              <strong>${item.descripcion}</strong><br>
-              Cantidad: ${item.cantidad}, Precio Unitario: $${item.precioUnitario.toFixed(2)}, Total: $${item.total.toFixed(2)}
-            </li>
-          `).join("")}
-        </ul>
-      `;
-
-      Swal.fire({
-        title: `Detalles de la Cotización - ${idCotizacion}`,
-        html: detallesHTML,
-        confirmButtonText: "Cerrar"
-      });
-    })
-    .withFailureHandler(error => {
-      Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: "Ocurrió un error al cargar la cotización: " + error.message,
-        confirmButtonText: "Aceptar"
-      });
-    })
-    .obtenerCotizacionPorId(idCotizacion);
-}
-
-
 
     function calcularTotalItem(input) {
       const itemDiv = input.closest(".item");
@@ -549,141 +502,6 @@ function actualizarCliente() {
     })
     .editarCliente(id, nombre, contacto, direccion, email, ciudad, empresa, tipoEmpresa, notas); // Pasar todas las variables incluyendo notas
 }
-
-// ================== HISTORIAL DE COTIZACIONES ================== //
-let timeoutBusqueda;
-
-// Función para renderizar resultados en la tabla
-function mostrarResultadosHistorial(resultados) {
-  const tbody = document.querySelector("#tablaCotizaciones tbody");
-  tbody.innerHTML = ""; // Limpiar tabla
-
-  if (!resultados || resultados.length === 0) {
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="4" class="text-center">No se encontraron cotizaciones.</td>
-      </tr>
-    `;
-    return;
-  }
-
-  resultados.forEach(cotizacion => {
-    const fila = document.createElement("tr");
-    fila.innerHTML = `
-      <td>${cotizacion.idCotizacion}</td>
-      <td>${cotizacion.cliente}</td>
-      <td>${cotizacion.empresa}</td>
-      <td>
-        <button class="btn btn-info btn-sm" 
-                onclick="verCotizacion('${cotizacion.idCotizacion}')">
-          Ver
-        </button>
-      </td>
-    `;
-    tbody.appendChild(fila);
-  });
-}
-
-// Función para cargar el historial
-function cargarHistorial() {
-  console.log("🔄 Iniciando carga de historial...");
-  
-  if (!document.getElementById("tablaCotizaciones")) {
-    console.error("❌ ERROR: La tabla no existe en el DOM");
-    return;
-  }
-
-  google.script.run
-    .withSuccessHandler(resultados => {
-      console.log("✅ Datos recibidos:", resultados);
-      mostrarResultadosHistorial(resultados);
-    })
-    .withFailureHandler(error => {
-      console.error("❌ Error al cargar:", error);
-      mostrarResultadosHistorial([]);
-    })
-    .obtenerTodasLasCotizaciones();
-}
-
-// Evento para cargar el historial cuando la pestaña está activa
-document.addEventListener("DOMContentLoaded", () => {
-  const tabHistorial = document.querySelector('a[href="#historial"]');
-  
-  if (tabHistorial) {
-    tabHistorial.addEventListener("shown.bs.tab", () => {
-      console.log("🔥 Pestaña de historial activada");
-      cargarHistorial();
-    });
-  } else {
-    console.error("❌ ERROR: Pestaña de historial no encontrada");
-  }
-});
-
-// Función de búsqueda en tiempo real
-function buscarHistorial() {
-  const termino = document.getElementById("buscarCotizacion").value.trim();
-  
-  if (termino.length < 2) {
-    mostrarResultadosHistorial([]);
-    return;
-  }
-
-  clearTimeout(timeoutBusqueda);
-  timeoutBusqueda = setTimeout(() => {
-    google.script.run
-      .withSuccessHandler(mostrarResultadosHistorial)
-      .buscarCotizaciones(termino);
-  }, 300);
-}
-
-// Función para ver una cotización
-function verCotizacion(idCotizacion) {
-  google.script.run
-    .withSuccessHandler(cotizacion => {
-      const detallesHTML = `
-        <strong>ID Cotización:</strong> ${cotizacion.idCotizacion}<br>
-        <strong>Cliente:</strong> ${cotizacion.cliente.nombre}<br>
-        <strong>Empresa:</strong> ${cotizacion.cliente.empresa}<br>
-        <strong>Fecha:</strong> ${cotizacion.fecha}<br>
-        <strong>Forma de Pago:</strong> ${cotizacion.formaPago}<br>
-        <strong>Descuento:</strong> $${cotizacion.descuento.toFixed(2)}<br>
-        <strong>Subtotal:</strong> $${cotizacion.subtotal.toFixed(2)}<br>
-        <strong>IVA (13%):</strong> $${cotizacion.iva.toFixed(2)}<br>
-        <strong>Total:</strong> $${cotizacion.total.toFixed(2)}<br>
-        <strong>Items:</strong><br>
-        <ul>
-          ${cotizacion.items.map(item => `
-            <li>
-              <strong>${item.descripcion}</strong><br>
-              Cantidad: ${item.cantidad}, Precio Unitario: $${item.precioUnitario.toFixed(2)}, Total: $${item.total.toFixed(2)}
-            </li>
-          `).join("")}
-        </ul>
-      `;
-
-      Swal.fire({
-        title: `Detalles de la Cotización - ${idCotizacion}`,
-        html: detallesHTML,
-        confirmButtonText: "Cerrar"
-      });
-    })
-    .withFailureHandler(error => {
-      Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: "Ocurrió un error al cargar la cotización: " + error.message,
-        confirmButtonText: "Aceptar"
-      });
-    })
-    .obtenerCotizacionPorId(idCotizacion);
-}
-
-// Cargar el historial al abrir la pestaña
-document.addEventListener("DOMContentLoaded", cargarHistorial);
-
-// Cargar el historial al abrir la pestaña
-document.addEventListener("DOMContentLoaded", cargarHistorial);
-
     // *** FUNCIÓN PARA MOSTRAR MENSAJES ***
     function mostrarMensaje(elementId, mensaje, esExitoso) {
       const div = document.getElementById(elementId);
@@ -880,7 +698,7 @@ document.addEventListener("DOMContentLoaded", cargarHistorial);
           </tbody>
         </table>
       </div>
-
+      
       <!-- Modal de carga -->
       <div id="modalCargando"
         style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 1000;">
