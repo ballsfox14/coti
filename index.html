@@ -367,35 +367,6 @@ function generarCotizacion() {
     .nuevaCotizacion(clienteId, items, descuento, formaPago);
 }
 
-// Función para mostrar los resultados del historial
-function mostrarResultadosHistorial(resultados) {
-  const tabla = document.getElementById("tablaCotizaciones").getElementsByTagName("tbody")[0];
-  tabla.innerHTML = ""; // Limpiar tabla
-
-  if (!resultados || resultados.length === 0) {
-    // Mostrar un mensaje amigable en la tabla
-    const fila = document.createElement("tr");
-    fila.innerHTML = `
-      <td colspan="4" class="text-center">No se encontraron cotizaciones.</td>
-    `;
-    tabla.appendChild(fila);
-    return;
-  }
-
-  resultados.forEach(cotizacion => {
-    const fila = document.createElement("tr");
-    fila.innerHTML = `
-      <td>${cotizacion.idCotizacion}</td>
-      <td>${cotizacion.cliente}</td>
-      <td>${cotizacion.empresa}</td>
-      <td>
-        <button class="btn btn-info btn-sm" onclick="verCotizacion('${cotizacion.idCotizacion}')">Ver</button>
-      </td>
-    `;
-    tabla.appendChild(fila);
-  });
-}
-
 // Función para ver una cotización
 function verCotizacion(idCotizacion) {
   google.script.run
@@ -579,51 +550,20 @@ function actualizarCliente() {
     .editarCliente(id, nombre, contacto, direccion, email, ciudad, empresa, tipoEmpresa, notas); // Pasar todas las variables incluyendo notas
 }
 
-
+// ================== HISTORIAL DE COTIZACIONES ================== //
 let timeoutBusqueda;
 
-// Función para buscar cotizaciones
-function buscarHistorial() {
-  const valor = document.getElementById("buscarCotizacion").value.trim();
-
-  // Validar que el término de búsqueda tenga al menos 2 caracteres
-  if (valor.length < 2) {
-    return;
-  }
-
-  // Limpiar el timeout anterior
-  if (timeoutBusqueda) {
-    clearTimeout(timeoutBusqueda);
-  }
-
-  // Ejecutar la búsqueda después de 300 ms
-  timeoutBusqueda = setTimeout(() => {
-    google.script.run.withSuccessHandler(mostrarResultadosHistorial)
-      .buscarCotizaciones(valor);
-  }, 300);
-}
-
-// Función para cargar todas las cotizaciones al abrir la pestaña
-function cargarHistorial() {
-  google.script.run.withSuccessHandler(mostrarResultadosHistorial)
-    .obtenerTodasLasCotizaciones();
-}
-
-// Cargar el historial al abrir la pestaña
-document.addEventListener("DOMContentLoaded", cargarHistorial);
-
-// Función para mostrar los resultados del historial
+// Función para renderizar resultados en la tabla
 function mostrarResultadosHistorial(resultados) {
-  const tabla = document.getElementById("tablaCotizaciones").getElementsByTagName("tbody")[0];
-  tabla.innerHTML = ""; // Limpiar tabla
+  const tbody = document.querySelector("#tablaCotizaciones tbody");
+  tbody.innerHTML = ""; // Limpiar tabla
 
   if (!resultados || resultados.length === 0) {
-    // Mostrar un mensaje amigable en la tabla
-    const fila = document.createElement("tr");
-    fila.innerHTML = `
-      <td colspan="4" class="text-center">No se encontraron cotizaciones.</td>
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="4" class="text-center">No se encontraron cotizaciones.</td>
+      </tr>
     `;
-    tabla.appendChild(fila);
     return;
   }
 
@@ -634,11 +574,66 @@ function mostrarResultadosHistorial(resultados) {
       <td>${cotizacion.cliente}</td>
       <td>${cotizacion.empresa}</td>
       <td>
-        <button class="btn btn-info btn-sm" onclick="verCotizacion('${cotizacion.idCotizacion}')">Ver</button>
+        <button class="btn btn-info btn-sm" 
+                onclick="verCotizacion('${cotizacion.idCotizacion}')">
+          Ver
+        </button>
       </td>
     `;
-    tabla.appendChild(fila);
+    tbody.appendChild(fila);
   });
+}
+
+// Función para cargar el historial
+function cargarHistorial() {
+  console.log("🔄 Iniciando carga de historial...");
+  
+  if (!document.getElementById("tablaCotizaciones")) {
+    console.error("❌ ERROR: La tabla no existe en el DOM");
+    return;
+  }
+
+  google.script.run
+    .withSuccessHandler(resultados => {
+      console.log("✅ Datos recibidos:", resultados);
+      mostrarResultadosHistorial(resultados);
+    })
+    .withFailureHandler(error => {
+      console.error("❌ Error al cargar:", error);
+      mostrarResultadosHistorial([]);
+    })
+    .obtenerTodasLasCotizaciones();
+}
+
+// Evento para cargar el historial cuando la pestaña está activa
+document.addEventListener("DOMContentLoaded", () => {
+  const tabHistorial = document.querySelector('a[href="#historial"]');
+  
+  if (tabHistorial) {
+    tabHistorial.addEventListener("shown.bs.tab", () => {
+      console.log("🔥 Pestaña de historial activada");
+      cargarHistorial();
+    });
+  } else {
+    console.error("❌ ERROR: Pestaña de historial no encontrada");
+  }
+});
+
+// Función de búsqueda en tiempo real
+function buscarHistorial() {
+  const termino = document.getElementById("buscarCotizacion").value.trim();
+  
+  if (termino.length < 2) {
+    mostrarResultadosHistorial([]);
+    return;
+  }
+
+  clearTimeout(timeoutBusqueda);
+  timeoutBusqueda = setTimeout(() => {
+    google.script.run
+      .withSuccessHandler(mostrarResultadosHistorial)
+      .buscarCotizaciones(termino);
+  }, 300);
 }
 
 // Función para ver una cotización
@@ -864,19 +859,24 @@ document.addEventListener("DOMContentLoaded", cargarHistorial);
 
       <div class="tab-pane" id="historial">
         <h3>Historial de Cotizaciones</h3>
-
-        <!-- Tabla de Cotizaciones -->
+        <div class="mb-3">
+          <input type="text"
+           id="buscarCotizacion"
+           class="form-control"
+           placeholder="Buscar por ID, cliente o empresa..."
+           onkeyup="buscarHistorial()">
+        </div>
         <table id="tablaCotizaciones" class="table table-striped">
           <thead>
             <tr>
               <th>ID</th>
-              <th>Nombre</th>
+              <th>Cliente</th>
               <th>Empresa</th>
               <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
-            <!-- Aquí se llenarán los resultados dinámicamente -->
+            <!-- Los datos aparecerán aquí -->
           </tbody>
         </table>
       </div>
