@@ -68,6 +68,56 @@ function obtenerClientePorId(clienteId) {
   }
 }
 
+function obtenerTodasLasCotizaciones() {
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const hojaCotizaciones = ss.getSheetByName("Cotizaciones");
+    const hojaClientes = ss.getSheetByName("Clientes");
+
+    if (!hojaCotizaciones || !hojaClientes) {
+      throw new Error("No se encontraron las hojas necesarias.");
+    }
+
+    // Obtener datos
+    const datosCotizaciones = hojaCotizaciones.getDataRange().getValues();
+    const datosClientes = hojaClientes.getDataRange().getValues();
+
+    // Mapear índices de columnas
+    const idCotizacionIndex = 0; // ID_Cotización
+    const idClienteIndex = 2; // ID_Cliente en Cotizaciones
+    const fechaIndex = 1; // Fecha
+    const totalIndex = 7; // Total
+
+    const idClienteClientesIndex = 0; // ID en Clientes
+    const nombreClienteIndex = 1; // Nombre en Clientes
+    const empresaClienteIndex = 6; // Empresa en Clientes
+
+    let resultados = [];
+
+    // Recorrer cotizaciones (excluyendo encabezados)
+    datosCotizaciones.slice(1).forEach(cotizacion => {
+      // Buscar cliente asociado
+      const cliente = datosClientes.filter(cliente => cliente[idClienteClientesIndex] === cotizacion[idClienteIndex])[0];
+
+      if (cliente) {
+        resultados.push({
+          idCotizacion: cotizacion[idCotizacionIndex],
+          fecha: cotizacion[fechaIndex],
+          cliente: cliente[nombreClienteIndex],
+          empresa: cliente[empresaClienteIndex],
+          total: cotizacion[totalIndex]
+        });
+      }
+    });
+
+    Logger.log("Resultados: " + JSON.stringify(resultados));
+    return resultados;
+  } catch (error) {
+    Logger.log("Error: " + error.message);
+    throw new Error(error.message);
+  }
+}
+
 // Agregar un nuevo cliente
 function nuevoCliente(nombre, telefono, direccion, email, ciudad, nombreEmpresa, tipoEmpresa, notas) {
   try {
