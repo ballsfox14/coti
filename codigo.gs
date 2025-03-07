@@ -78,15 +78,13 @@ function obtenerTodasLasCotizaciones() {
       throw new Error("No se encontraron las hojas necesarias.");
     }
 
-    // Obtener datos
     const datosCotizaciones = hojaCotizaciones.getDataRange().getValues();
     const datosClientes = hojaClientes.getDataRange().getValues();
 
-    // Mapear índices de columnas
     const idCotizacionIndex = 0; // ID_Cotización
     const idClienteIndex = 2; // ID_Cliente en Cotizaciones
-    const fechaIndex = 1; // Fecha
-    const totalIndex = 7; // Total
+    const fechaIndex = 1; // Fecha en Cotizaciones
+    const totalIndex = 7; // Total en Cotizaciones
 
     const idClienteClientesIndex = 0; // ID en Clientes
     const nombreClienteIndex = 1; // Nombre en Clientes
@@ -94,10 +92,10 @@ function obtenerTodasLasCotizaciones() {
 
     let resultados = [];
 
-    // Recorrer cotizaciones (excluyendo encabezados)
     datosCotizaciones.slice(1).forEach(cotizacion => {
-      // Buscar cliente asociado
-      const cliente = datosClientes.filter(cliente => cliente[idClienteClientesIndex] === cotizacion[idClienteIndex])[0];
+      const cliente = datosClientes.filter(cliente =>
+        cliente[idClienteClientesIndex] === cotizacion[idClienteIndex]
+      )[0];
 
       if (cliente) {
         resultados.push({
@@ -111,10 +109,10 @@ function obtenerTodasLasCotizaciones() {
     });
 
     Logger.log("Resultados: " + JSON.stringify(resultados));
-    return resultados;
+    return resultados; // ¡Siempre devuelve un array!
   } catch (error) {
-    Logger.log("Error: " + error.message);
-    throw new Error(error.message);
+    Logger.log("Error en obtenerTodasLasCotizaciones: " + error.message);
+    return []; // Devuelve un array vacío en caso de error
   }
 }
 
