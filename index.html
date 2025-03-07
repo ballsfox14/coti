@@ -676,7 +676,7 @@ function actualizarCliente() {
         <div id="mensajeCotizacion" style="display: none;"></div>
       </div>
 
-      <!-- Sección del Historial de Cotizaciones -->
+      <!-- En tu HTML -->
       <div class="tab-pane" id="historial">
         <h3>Historial de Cotizaciones</h3>
         <table class="table table-striped">
@@ -688,7 +688,7 @@ function actualizarCliente() {
               <th>Total</th>
             </tr>
           </thead>
-          <tbody id="tablaCotizaciones"></tbody> <!-- ID correcto -->
+          <tbody id="tablaCotizaciones"></tbody> <!-- ID CORRECTO -->
         </table>
       </div>
 
@@ -837,48 +837,54 @@ function actualizarCliente() {
   </div>
   <script>
     // Función para cargar el historial
-      function cargarHistorial() {
-        google.script.run
-          .withSuccessHandler(mostrarCotizaciones) // SIN PARENTESIS
-          .withFailureHandler(error => console.error(error))
-          .obtenerTodasLasCotizaciones(); // Verifica el nombre de la función
+function cargarHistorial() {
+  google.script.run
+    .withSuccessHandler(function (cotizaciones) {
+      console.log("Datos recibidos del backend:", cotizaciones); // Verifica aquí
+      if (cotizaciones === null || cotizaciones === undefined) {
+        console.error("Error: Datos nulos o indefinidos.");
+        return;
       }
+      mostrarCotizaciones(cotizaciones);
+    })
+    .withFailureHandler(error => console.error("Error en la llamada al backend:", error))
+    .obtenerTodasLasCotizaciones(); // Llama a la función correcta
+}
 
       // Función para mostrar los datos
-      function mostrarCotizaciones(cotizaciones) {
-        // Verificar si los datos son un array
-        if (!Array.isArray(cotizaciones)) {
-          console.error("Datos inválidos:", cotizaciones);
-          return;
-        }
+function mostrarCotizaciones(cotizaciones) {
+  if (cotizaciones === null || cotizaciones === undefined) {
+    console.error("Los datos recibidos son nulos o indefinidos.");
+    cotizaciones = []; // Asigna un array vacío
+  }
 
-        const tbody = document.getElementById("tablaCotizaciones");
-        if (!tbody) {
-          console.error("No se encontró el tbody 'tablaCotizaciones'");
-          return;
-        }
+  if (!Array.isArray(cotizaciones)) {
+    console.error("Los datos recibidos no son un array válido.");
+    cotizaciones = [];
+  }
 
-        tbody.innerHTML = ""; // Limpiar la tabla
+  const tbody = document.getElementById("tablaCotizaciones");
+  tbody.innerHTML = "";
 
-        if (cotizaciones.length === 0) {
-          const row = tbody.insertRow();
-          row.insertCell().colSpan = 4;
-          row.insertCell().textContent = "No hay cotizaciones disponibles.";
-        } else {
-          cotizaciones.forEach(cotizacion => {
-            const row = tbody.insertRow();
-            row.insertCell().textContent = cotizacion.idCotizacion;
-            row.insertCell().textContent = cotizacion.cliente;
-            row.insertCell().textContent = cotizacion.empresa;
-            row.insertCell().textContent = `$${cotizacion.total}`;
-          });
-        }
-      }
+  if (cotizaciones.length === 0) {
+    const row = tbody.insertRow();
+    row.insertCell().colSpan = 4;
+    row.insertCell().textContent = "No hay cotizaciones disponibles.";
+  } else {
+    cotizaciones.forEach(cotizacion => {
+      const row = tbody.insertRow();
+      row.insertCell().textContent = cotizacion.idCotizacion;
+      row.insertCell().textContent = cotizacion.cliente;
+      row.insertCell().textContent = cotizacion.empresa;
+      row.insertCell().textContent = `$${parseFloat(cotizacion.total).toFixed(2)}`;
+    });
+  }
+}
 
       // Ejecutar al cargar la página
-      document.addEventListener("DOMContentLoaded", function() {
-        cargarHistorial();
-      });
+ document.addEventListener("DOMContentLoaded", function () {
+  cargarHistorial(); // Cargar historial al iniciar
+});
   </script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 </body>
